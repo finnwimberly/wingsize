@@ -4,7 +4,7 @@ This program helps to calculate seabird wing area from images. It is semi-automa
 
 ---
 
-## first-time setup
+## FIRST TIME SETUP
 **1. clone the repo**
 ```
 git clone https://github.com/finnwimberly/wingsize.git
@@ -31,16 +31,16 @@ chmod +x run.sh
 drop `.jpg` / `.jpeg` / `.png` files into the `images/` folder.
 
 
-## running
+## RUNNING THE PROGRAM
 ```
 ./run.sh
 ```
 
-This activates the env and launches the script automatically — no manual `conda activate` needed.
+This activates the env and launches the script automatically — no manual `conda activate` needed. executing this command in the terminal will take you step by step through the below workflow.
 
 ---
 
-## workflow
+## the workflow:
 
 each image steps through three windows:
 
