@@ -29,7 +29,7 @@ chmod +x run.sh
 
 **5. add your images**
 drop `.jpg` / `.jpeg` / `.png` files into the `images/` folder.
----
+
 
 ## running
 ```
