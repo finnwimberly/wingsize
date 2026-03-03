@@ -1,4 +1,4 @@
-# wing_sizer
+# wingsize
 
 This program helps to calculate seabird wing area from images. It is semi-automated — you calibrate the scale against a background grid, and initial outline the of the wing is guessed using color detection, and then you can fine-tune the polygon. The results are saved to `wing_results.csv`. All setup, run-actions are done from the terminal. This will prompt imagine and polygon pop-ups.  
 
@@ -7,8 +7,8 @@ This program helps to calculate seabird wing area from images. It is semi-automa
 ## first-time setup
 **1. clone the repo**
 ```
-git clone https://github.com/finnwimberly/seabirds.git
-cd seabirds
+git clone https://github.com/finnwimberly/wingsize.git
+cd wingsize
 ```
 
 **2. install miniconda if needed** 
