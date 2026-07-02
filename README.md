@@ -74,7 +74,7 @@ Adjust the polygon before confirming:
 
 ## outputs
 
-- `wing_results.csv` — one row per image: filename, ppc_x, ppc_y, area_cm²
+- `wing_results.csv` — one row per image: filename, ppc_x, ppc_y, area_cm2, wingspan_cm, chord_l_cm
 - `processed_wings/` — binary wing masks saved as `.jpg`
 
 ---
