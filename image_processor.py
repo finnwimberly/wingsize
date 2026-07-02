@@ -104,7 +104,7 @@ if not os.path.exists(img_folder):
 
 images = sorted([f for f in os.listdir(img_folder) if f.lower().endswith(valid_exts)])
 
-CSV_HEADER = ['filename', 'ppc_x', 'ppc_y', 'area_cm2', 'wing_length_cm', 'chord_l']
+CSV_HEADER = ['filename', 'ppc_x', 'ppc_y', 'area_cm2', 'wingspan_cm', 'chord_l_cm']
 csv_rows = {}
 if os.path.exists(csv_path):
     with open(csv_path, 'r') as f:
