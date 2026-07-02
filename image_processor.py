@@ -15,7 +15,7 @@ if not os.path.exists(output_root):
 
 def quit_program():
     # os._exit bypasses Python teardown, killing the macOS event loop
-    # that plt leaves running in the background — prevents the spinning wheel
+    # that plt leaves running in the background — prevents wheel of death
     plt.close('all')
     os._exit(0)
 
@@ -104,7 +104,7 @@ if not os.path.exists(img_folder):
 
 images = sorted([f for f in os.listdir(img_folder) if f.lower().endswith(valid_exts)])
 
-CSV_HEADER = ['filename', 'ppc_x', 'ppc_y', 'area_cm2']
+CSV_HEADER = ['filename', 'ppc_x', 'ppc_y', 'area_cm2', 'wing_length_cm', 'chord_l']
 csv_rows = {}
 if os.path.exists(csv_path):
     with open(csv_path, 'r') as f:
@@ -161,13 +161,13 @@ for idx, img_name in enumerate(images, 1):
                 return
             pts.append((event.xdata, event.ydata))
             n = len(pts)
-            color = 'lime' if n <= 2 else 'deepskyblue'
+            color = 'lime' if n <= 2 else 'red'
             ax.plot(event.xdata, event.ydata, '+', color=color, ms=14, mew=2.5, zorder=5)
             # connect each pair with a line once both points are placed
             if n == 2:
                 ax.plot([pts[0][0], pts[1][0]], [pts[0][1], pts[1][1]], '-', color='lime', lw=1.5, alpha=0.6, zorder=4)
             elif n == 4:
-                ax.plot([pts[2][0], pts[3][0]], [pts[2][1], pts[3][1]], '-', color='deepskyblue', lw=1.5, alpha=0.6, zorder=4)
+                ax.plot([pts[2][0], pts[3][0]], [pts[2][1], pts[3][1]], '-', color='red', lw=1.5, alpha=0.6, zorder=4)
                 # brief pause so both lines are visible before advancing — timer fires
                 # from within the event loop, which is required for thread safety on macOS
                 fig._cal_timer = fig.canvas.new_timer(interval=700)
@@ -275,17 +275,44 @@ for idx, img_name in enumerate(images, 1):
         res_verts = editor.get_verts()
 
         if len(res_verts) > 0:
+            #calc area
             cv2.fillPoly(mask_solid, [res_verts.astype(np.int32)], 255)
             area_cm2 = np.sum(mask_solid == 255) / (ppc_x * ppc_y)
             cv2.imwrite(os.path.join(output_root, f"mask_{img_name}"), mask_solid)
 
-            new_row = [img_name, round(ppc_x, 2), round(ppc_y, 2), round(area_cm2, 2)]
+            #calc wing length: horizontal span of the mask (leftmost to rightmost column with wing pixels)
+            cols_with_wing = np.where(np.any(mask_solid == 255, axis=0))[0]
+            x_min, x_max = cols_with_wing[0], cols_with_wing[-1]
+            wing_length_cm = (x_max - x_min) / ppc_x
+
+            #calc chord length: vertical thickness of the base, scanned over a
+            # small band of columns so a slightly non-vertical edge doesn't
+            # clip the true height down to a single sliver column
+            band_px = max(1, int(round(0.25 * ppc_x)))  # ~1mm band
+            base_band = mask_solid[:, x_min:x_min + band_px]
+            rows_at_base = np.where(np.any(base_band == 255, axis=1))[0]
+            chord_l = (rows_at_base[-1] - rows_at_base[0]) / ppc_y
+
+            #draw the two measurements on top of the mask for visual verification
+            mask_vis = cv2.cvtColor(mask_solid, cv2.COLOR_GRAY2BGR)
+            y_len = int(np.mean(np.where(mask_solid[:, x_min] == 255)[0]))
+            x_chord = x_min + band_px // 2
+            cv2.line(mask_vis, (x_min, y_len), (x_max, y_len), (0, 255, 0), 2)
+            cv2.line(mask_vis, (x_chord, rows_at_base[0]), (x_chord, rows_at_base[-1]), (0, 0, 255), 2)
+            cv2.putText(mask_vis, f"Wingspan: {wing_length_cm:.2f} cm", (x_min, max(y_len - 15, 20)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
+            cv2.putText(mask_vis, f"Chord Length: {chord_l:.2f} cm", (x_chord + 10, max(rows_at_base[0] - 15, 20)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+            cv2.imwrite(os.path.join(output_root, f"annotated_{img_name}"), mask_vis)
+
+            new_row = [img_name, round(ppc_x, 2), round(ppc_y, 2), round(area_cm2, 2),
+                       round(wing_length_cm, 2), round(chord_l, 2)]
             csv_rows[img_name] = new_row
             with open(csv_path, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(CSV_HEADER)
                 writer.writerows(csv_rows.values())
 
-            print(f"  saved: {area_cm2:.2f} cm²")
+            print(f"  saved: {area_cm2:.2f} cm²  ·  length: {wing_length_cm:.2f} cm  ·  chord: {chord_l:.2f} cm")
 
 print("\nall done.")
